@@ -23,5 +23,6 @@ hs_err_pid*
 /bin/
 
 .classpath
+.DS_Store
 .project
 src/com/Main.java
