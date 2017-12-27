@@ -6,22 +6,27 @@ import java.util.List;
 
 public class ConflictHandler {
 	
+	protected List<VerifiedAnnouncement> announcements;
     protected List<Roa> roas;
     protected List<Conflict> conflicts;
     
     public class Conflict {
-    	private int announcement_id;
+    	private VerifiedAnnouncement announcement;
     	private List<RoaEntry> roas;
     	
-    	public Conflict(int announcement_id, List<RoaEntry> roas){
-    		this.announcement_id = announcement_id;
+    	public Conflict(VerifiedAnnouncement announcement, List<RoaEntry> roas){
+    		this.announcement = announcement;
     		this.roas = roas;
     	}
     	
-    	public Conflict(int announcement_id, RoaEntry roaEntry){
-    		this.announcement_id = announcement_id;
+    	public Conflict(VerifiedAnnouncement announcement, RoaEntry roaEntry){
+    		this.announcement = announcement;
     		this.roas = new ArrayList<>();
     		this.roas.add(roaEntry);
+    	}
+    	
+    	public VerifiedAnnouncement getAnnouncement(){
+    		return this.announcement;
     	}
     	
     	public void addRoa(RoaEntry roaEntry){
@@ -66,7 +71,7 @@ public class ConflictHandler {
     
     public class Roa {
     	private int id;
-    	private int asn;
+    	private long asn;
     	private String prefix;
     	private int max_length;
     	private Boolean filtered;
@@ -75,7 +80,7 @@ public class ConflictHandler {
     	private Timestamp created_at;
     	private Timestamp updated_at;
     	
-    	public Roa(int id, int asn, String prefix, int max_length, 
+    	public Roa(int id, long asn, String prefix, int max_length, 
     			Boolean filtered, Boolean whitelisted, int trust_anchor_id, Timestamp created_at, Timestamp updated_at){
     		this.id = id;
     		this.asn = asn;
@@ -88,6 +93,12 @@ public class ConflictHandler {
     		this.updated_at = updated_at;
     	}
     	
+    	@Override
+    	public String toString(){
+    		return this.id + "\t" + this.asn + "\t" + this.prefix + "\t" + this.max_length + "\t" + this.filtered + "\t" +
+    	this.whitelisted + "\t" + this.trust_anchor_id + "\t" + this.created_at + "\t" + this.updated_at;
+    	}
+    	
     	public void setFiltered(Boolean filtered){
     		this.filtered = filtered;
     	}
@@ -95,22 +106,75 @@ public class ConflictHandler {
     	public Boolean getWhitelisted(){
     		return this.whitelisted;
     	}
-    }
-
-    public List<Roa> getRoas(){
-    	return this.roas;
+    	
+    	public void setFilteredWhitelistFalse(){
+    		this.filtered = false;
+    		this.whitelisted = false;
+    	}
     }
     
-    public List<Conflict> getConflicts(){
-    	return this.conflicts;
+    public class Announcement {
+    	private int id;
+    	private long asn;
+    	private String prefix;
+    	private Timestamp created_at;
+    	private Timestamp updated_at;
+    	
+    	public Announcement(int id, long asn, String prefix, Timestamp created_at, Timestamp updated_at){
+    		this.id = id;
+    		this.asn = asn;
+    		this.prefix = prefix;
+    		this.created_at = created_at;
+    		this.updated_at = updated_at;
+    	}
+    	
+    	@Override
+    	public String toString(){
+    		return this.id + "\t" + this.asn + "\t" + this.prefix + "\t" + this.created_at + "\t" + this.updated_at;
+    	}
+    	
+    	public int getId(){
+    		return this.id;
+    	}
+    	
+    	public long getAsn(){
+    		return this.asn;
+    	}
+    	
+    	public String getPrefix(){
+    		return this.prefix;
+    	}
     }
 
-	public void setRoas(List<Roa> roas) {
-		this.roas = roas;
-	}
-
-	public void setConflicts(List<Conflict> conflicts) {
-		this.conflicts = conflicts;
-	}
+    public class VerifiedAnnouncement {
+    	private int id;
+    	private Announcement announcement;
+    	private Timestamp created_at;
+    	private Timestamp updated_at;
+    	
+    	public VerifiedAnnouncement(int id, Announcement announcement, Timestamp created_at, Timestamp updated_at){
+    		this.id = id;
+    		this.announcement = announcement;
+    		this.created_at = created_at;
+    		this.updated_at = updated_at;
+    	}
+    	
+    	@Override
+    	public String toString(){
+    		return this.id + "\t" + this.announcement.toString() + "\t" + this.created_at + "\t" + this.updated_at; 
+    	}
+    	
+    	public int getId(){
+    		return this.id;
+    	}
+    	
+    	public long getAsn(){
+    		return this.announcement.getAsn();
+    	}
+    	
+    	public String getPrefix(){
+    		return this.announcement.getPrefix();
+    	}
+    }
     
 }

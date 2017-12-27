@@ -9,33 +9,52 @@ public class ConflictResolver extends ConflictHandler{
 	
 	public ConflictResolver(String db, String user, String password){
 		conflictGetter = new ConflictGetter(db, user, password);
-		this.start();
 	}
 	
-	public void start(){
-        
-		conflictGetter.start();
-		roas = new ArrayList<>();
-		conflicts = new ArrayList<>();
-		roas = conflictGetter.getRoas();
-		conflicts = conflictGetter.getConflicts();
+	// Options for testing purposes.
+	public void start(Boolean loadAnnouncements, Boolean loadRoas, Boolean loadConflicts){
+		conflictGetter.start(loadAnnouncements, loadRoas, loadConflicts);
 		
-//		System.out.println("\nLoaded conflicts: " + conflicts.size());
-		
-		System.out.println("\nHandling conflicts, please stand by...");
-        long start = System.currentTimeMillis();
+		if(loadAnnouncements){		
+			announcements = new ArrayList<>();
+			announcements = conflictGetter.announcements;
+		}
+		if(loadRoas){
+			roas = new ArrayList<>();
+			roas = conflictGetter.roas;
+		}
+		if(loadConflicts){
+			conflicts = new ArrayList<>();
+			conflicts = conflictGetter.conflicts;
+		}
 		
 		this.removeValid();
-		
-		System.out.println("Invalid conflicts:" + conflicts.size());
-		
-		this.ignoreAll();
-		
-		System.out.println("Ignored all");
-		
+		this.setFilteredWhitelistFalse();
+		System.out.println("Invalid conflicts: " + conflicts.size() + ", ROAs: " + roas.size());
+	}
+	
+	public void handleConflicts(String heuristics){
+		System.out.println("Resolving conflicts, please stand by...\n");
+        long start = System.currentTimeMillis();
+        
+        switch(heuristics){
+        	case "i": ignoreAll();
+        			System.out.println("Ignore all.");
+        			break;
+        	case "f": filterAll();
+        			System.out.println("Filter all.");
+        			break;
+        	case "w": whitelistAll();
+        			System.out.println("Whitelist all.");
+        			break;
+        	default: break;
+        }
+        System.out.println("ROAs: " + roas.size());
+        
         long end = System.currentTimeMillis();
         long diff = end - start;
-        System.out.println("\nFinished. Handling took " + (diff / 1000)  + "." + (diff % 1000) + " s.");
+        System.out.println("Invalid conflicts: " + conflicts.size() + ", ROAs: " + roas.size() + 
+        		". Resolving took " + (diff / 1000)  + "." + (diff % 1000) + " s.");
 	}
 	
 	private void removeValid(){
@@ -50,9 +69,35 @@ public class ConflictResolver extends ConflictHandler{
     	}
     }
 	
-	private void ignoreAll(){
+	private void setFilteredWhitelistFalse(){
 		for(int i = 0; i < roas.size(); i++){
-			roas.get(i).setFiltered(false);
+			roas.get(i).setFilteredWhitelistFalse();
+		}
+	}
+	
+	// Ignore all conflicts, i.e. remove whitelist ROAs and do not filter ROAs.
+	private void ignoreAll(){
+		int i = 0;
+		while(i < roas.size()){
+			if(roas.get(i).getWhitelisted() == true){
+				roas.remove(i);
+			}else{
+				roas.get(i).setFiltered(false);
+				i++;
+			}
+		}
+	}
+	
+	private void filterAll(){
+		for(int i = 0; i < roas.size(); i++){
+			roas.get(i).setFiltered(true);
+		}
+	}
+	
+	private void whitelistAll(){
+		for(int i = 0; i < conflicts.size(); i++){
+			VerifiedAnnouncement announcement = conflicts.get(i).getAnnouncement();
+			roas.add(new Roa(roas.size(), announcement.getAsn(), announcement.getPrefix(), 0, false, true, 0, null, null));
 		}
 	}
 

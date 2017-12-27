@@ -38,19 +38,68 @@ public class ConflictGetter extends ConflictHandler{
     }
     
  // Start the Conflict Getter
-    public void start(){
-    	System.out.println("\nLoading conflicts, please stand by...");
+    public void start(Boolean loadAnnouncements, Boolean loadRoas, Boolean loadConflicts){
+    	System.out.println("Loading conflicts, please stand by...\n");
         long start = System.currentTimeMillis();
         
-    	roas = new ArrayList<>();
-    	conflicts = new ArrayList<>();
-    	loadRoas();
-    	loadConflicts();
+        if(loadAnnouncements){
+            announcements = new ArrayList<>();
+        	loadAnnouncements();
+        }
+        if(loadRoas){
+        	roas = new ArrayList<>();
+        	loadRoas();
+        }
+        if(loadConflicts){
+        	conflicts = new ArrayList<>();
+        	loadConflicts();
+        }
     	
     	System.out.println("Loaded ROAs: " + roas.size() + "\nLoaded conflicts: " + conflicts.size());
         long end = System.currentTimeMillis();
         long diff = end - start;
-        System.out.println("\nFinished. Loading took " + (diff / 1000)  + "." + (diff % 1000) + " s.");
+        System.out.println("Loaded ROAs: " + roas.size() + ", Loaded conflicts: " + conflicts.size() + 
+        		". Loading took " + (diff / 1000)  + "." + (diff % 1000) + " s.\n");
+    }
+    
+    private void loadAnnouncements(){
+    	try{
+    		Statement stmt = connection.createStatement();
+    		ResultSet rs = stmt.executeQuery("SELECT * FROM announcements ORDER BY id");
+    		List<Announcement> announcements = new ArrayList<>();
+    		Announcement announcement;
+    		
+    		while(rs.next()){
+    			int id = rs.getInt(1);
+    			long asn = rs.getLong(2);
+    			String prefix = rs.getString(3);
+    			Timestamp created_at = rs.getTimestamp(4);
+    			Timestamp updated_at = rs.getTimestamp(5);
+    			announcement = new Announcement(id,asn, prefix, created_at, updated_at);
+    			announcements.add(announcement);
+    			if(announcements.size() % 100000 == 0){
+    				System.out.println("Loaded " + announcements.size() + " announcements.");
+    			}
+    		}
+    		
+    		rs = stmt.executeQuery("SELECT * FROM verified_announcements ORDER BY id");
+    		VerifiedAnnouncement verifiedAnnouncement;
+    		
+    		while(rs.next()){
+    			int id = rs.getInt(1);
+    			int announcement_id = rs.getInt(2);
+    			Timestamp created_at = rs.getTimestamp(3);
+    			Timestamp updated_at = rs.getTimestamp(4);
+    			announcement = announcements.get(announcement_id - 1);
+    			verifiedAnnouncement = new VerifiedAnnouncement(id, announcement, created_at, updated_at);
+    			this.announcements.add(verifiedAnnouncement);
+    			if(this.announcements.size() % 100000 == 0){
+    				System.out.println("Loaded " + this.announcements.size() + " verified announcements.");
+    			}
+    		}
+    	}catch(Exception e){
+    		System.out.println(e.getMessage());
+    	}
     }
     
     private void loadRoas(){
@@ -60,8 +109,11 @@ public class ConflictGetter extends ConflictHandler{
     		Roa roa;
     		
     		while(rs.next()){
-    			roa = new Roa(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getInt(4), 
-    					rs.getBoolean(5), rs.getBoolean(6), rs.getInt(7), rs.getTimestamp(8), rs.getTimestamp(9));
+    			int id = rs.getInt(1);
+    			Boolean filtered = rs.getBoolean(5);
+    			Boolean whitelisted = rs.getBoolean(6);
+    			roa = new Roa(id, rs.getLong(2), rs.getString(3), rs.getInt(4), 
+    					filtered, whitelisted, rs.getInt(7), rs.getTimestamp(8), rs.getTimestamp(9));
     			roas.add(roa);
     			if(roas.size() % 10000 == 0){
     				System.out.println("Loaded " + roas.size() + " ROAs.");
@@ -76,25 +128,37 @@ public class ConflictGetter extends ConflictHandler{
     	try{
     		Statement stmt = connection.createStatement();
     		ResultSet rs = stmt.executeQuery("SELECT * FROM validated_roas_verified_announcements");
-    		
     		rs.next();
+    		
     		int previousAnnouncement_id;
     		int announcement_id = rs.getInt(2);
+    		VerifiedAnnouncement announcement = announcements.get(announcement_id - 1);
+    		
     		int roa_id = rs.getInt(3);
     		Roa roa = roas.get(roa_id - 1);
-    		RoaEntry roaEntry = new RoaEntry(roa, rs.getInt(4), rs.getTimestamp(5), rs.getTimestamp(6));
+    		int route_validity = rs.getInt(4);
+    		Timestamp created_at = rs.getTimestamp(5);
+			Timestamp updated_at = rs.getTimestamp(6);
+    		RoaEntry roaEntry = new RoaEntry(roa, route_validity, created_at, updated_at);
     		
-    		Conflict conflict = new Conflict(announcement_id, roaEntry);
+    		Conflict conflict = new Conflict(announcement, roaEntry);
     		
     		while(rs.next()){
     			previousAnnouncement_id = announcement_id;
     			announcement_id = rs.getInt(2);
-    			roaEntry = new RoaEntry(roa, rs.getInt(4), rs.getTimestamp(5), rs.getTimestamp(6));
+    			announcement = announcements.get(announcement_id - 1);
+        		
+        		roa_id = rs.getInt(3);
+        		roa = roas.get(roa_id - 1);
+        		route_validity = rs.getInt(4);
+        		created_at = rs.getTimestamp(5);
+    			updated_at = rs.getTimestamp(6);
+        		roaEntry = new RoaEntry(roa, route_validity, created_at, updated_at);
     			if(announcement_id == previousAnnouncement_id){
     				conflict.addRoa(roaEntry);
     			}else{
     				conflicts.add(conflict);
-    				conflict = new Conflict(announcement_id, roaEntry);
+    				conflict = new Conflict(announcement, roaEntry);
     			}
     			if(conflicts.size() % 10000 == 0){
     				System.out.println("Loaded " + conflicts.size() + " conflicts.");
