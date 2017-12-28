@@ -1,4 +1,4 @@
-package com;
+package org.smartvalidator;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;

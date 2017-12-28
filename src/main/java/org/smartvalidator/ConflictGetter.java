@@ -1,4 +1,4 @@
-package com;
+package org.smartvalidator;
 
 import java.sql.*;
 import java.util.*;
