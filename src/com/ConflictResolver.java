@@ -1,39 +1,49 @@
 package com;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ConflictResolver extends ConflictHandler{
 	
-	private ConflictGetter conflictGetter;
+	private ConflictGetter databaseConnector;
+	private static final long DAY = 86400000;
 	
 	public ConflictResolver(String db, String user, String password){
-		conflictGetter = new ConflictGetter(db, user, password);
+		databaseConnector = new ConflictGetter(db, user, password);
 	}
 	
 	// Options for testing purposes.
-	public void start(Boolean loadAnnouncements, Boolean loadRoas, Boolean loadConflicts){
-		conflictGetter.start(loadAnnouncements, loadRoas, loadConflicts);
+	public void load(Boolean loadAnnouncements, Boolean loadRoas, Boolean loadConflicts){
+		System.out.println("Loading conflicts, please stand by...\n");
+        long start = System.currentTimeMillis();
 		
 		if(loadAnnouncements){		
 			announcements = new ArrayList<>();
-			announcements = conflictGetter.announcements;
+			databaseConnector.loadAnnouncements();
+			announcements = databaseConnector.announcements;
 		}
 		if(loadRoas){
 			roas = new ArrayList<>();
-			roas = conflictGetter.roas;
+			databaseConnector.loadRoas();
+			roas = databaseConnector.roas;
 		}
 		if(loadConflicts){
 			conflicts = new ArrayList<>();
-			conflicts = conflictGetter.conflicts;
+			databaseConnector.loadConflicts();
+			conflicts = databaseConnector.conflicts;
 		}
+		long end = System.currentTimeMillis();
+        long diff = end - start;
+        System.out.println("Loaded ROAs: " + roas.size() + ", Loaded conflicts: " + conflicts.size() + 
+        		". Loading took " + (diff / 1000)  + "." + (diff % 1000) + " s.\n");
 		
 		this.removeValid();
 		this.setFilteredWhitelistFalse();
-		System.out.println("Invalid conflicts: " + conflicts.size() + ", ROAs: " + roas.size());
+		System.out.println("Invalid conflicts: " + conflicts.size());
 	}
 	
-	public void handleConflicts(String heuristics){
+	public void handleConflicts(String heuristics, int days){
 		System.out.println("Resolving conflicts, please stand by...\n");
         long start = System.currentTimeMillis();
         
@@ -41,10 +51,10 @@ public class ConflictResolver extends ConflictHandler{
         	case "i": ignoreAll();
         			System.out.println("Ignore all.");
         			break;
-        	case "f": filterAll();
+        	case "f": filterAfterTime(days);
         			System.out.println("Filter all.");
         			break;
-        	case "w": whitelistAll();
+        	case "w": whitelistAfterTime(days);
         			System.out.println("Whitelist all.");
         			break;
         	default: break;
@@ -55,6 +65,10 @@ public class ConflictResolver extends ConflictHandler{
         long diff = end - start;
         System.out.println("Invalid conflicts: " + conflicts.size() + ", ROAs: " + roas.size() + 
         		". Resolving took " + (diff / 1000)  + "." + (diff % 1000) + " s.");
+	}
+	
+	public void push(){
+		databaseConnector.pushRoas();
 	}
 	
 	private void removeValid(){
@@ -88,16 +102,26 @@ public class ConflictResolver extends ConflictHandler{
 		}
 	}
 	
-	private void filterAll(){
-		for(int i = 0; i < roas.size(); i++){
-			roas.get(i).setFiltered(true);
+	private void filterAfterTime(int days){
+		long now = System.currentTimeMillis();
+		for(int i = 0; i < conflicts.size(); i++){
+			VerifiedAnnouncement announcement = conflicts.get(i).getAnnouncement();
+			if((now - announcement.getCreated_at().getTime()) / DAY > days){
+				for(int j = 0; j < conflicts.get(i).getRoaIds().length; j++){
+					int roaId = conflicts.get(i).getRoaIds()[j];
+					roas.get(roaId - 1).setFiltered(true);
+				}
+			}
 		}
 	}
 	
-	private void whitelistAll(){
+	private void whitelistAfterTime(int days){
+		long now = System.currentTimeMillis();
 		for(int i = 0; i < conflicts.size(); i++){
 			VerifiedAnnouncement announcement = conflicts.get(i).getAnnouncement();
-			roas.add(new Roa(roas.size(), announcement.getAsn(), announcement.getPrefix(), 0, false, true, 0, null, null));
+			if((now - announcement.getCreated_at().getTime()) / DAY > days){
+				roas.add(new Roa(roas.size(), announcement.getAsn(), announcement.getPrefix(), 0, false, true, 0, null, null));
+			}
 		}
 	}
 

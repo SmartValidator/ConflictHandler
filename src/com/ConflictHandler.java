@@ -36,6 +36,14 @@ public class ConflictHandler {
     	public List<RoaEntry> getRoas(){
     		return this.roas;
     	}
+    	
+    	public int[] getRoaIds(){
+    		int[] roaIds = new int[roas.size()];
+    		for(int i = 0; i < roas.size(); i++){
+    			roaIds[i] = roas.get(i).getRoaId();
+    		}
+    		return roaIds;
+    	}
     }
     
     public class RoaEntry {
@@ -60,8 +68,12 @@ public class ConflictHandler {
     		this.updated_at = updated_at;
     	}
     	
-    	public Roa getRoa(){
-    		return this.roa;
+//    	public Roa getRoa(){
+//    		return this.roa;
+//    	}
+    	
+    	public int getRoaId(){
+    		return roa.getId();
     	}
     	
     	public int getValidity(){
@@ -99,6 +111,10 @@ public class ConflictHandler {
     	this.whitelisted + "\t" + this.trust_anchor_id + "\t" + this.created_at + "\t" + this.updated_at;
     	}
     	
+    	public int getId(){
+    		return id;
+    	}
+    	
     	public void setFiltered(Boolean filtered){
     		this.filtered = filtered;
     	}
@@ -110,6 +126,41 @@ public class ConflictHandler {
     	public void setFilteredWhitelistFalse(){
     		this.filtered = false;
     		this.whitelisted = false;
+    	}
+    }
+    
+    public class VerifiedAnnouncement {
+    	private int id;
+    	private Announcement announcement;
+    	private Timestamp created_at;
+    	private Timestamp updated_at;
+    	
+    	public VerifiedAnnouncement(int id, Announcement announcement, Timestamp created_at, Timestamp updated_at){
+    		this.id = id;
+    		this.announcement = announcement;
+    		this.created_at = created_at;
+    		this.updated_at = updated_at;
+    	}
+    	
+    	@Override
+    	public String toString(){
+    		return this.id + "\t" + this.announcement.toString() + "\t" + this.created_at + "\t" + this.updated_at; 
+    	}
+    	
+    	public int getId(){
+    		return this.id;
+    	}
+    	
+    	public long getAsn(){
+    		return this.announcement.getAsn();
+    	}
+    	
+    	public String getPrefix(){
+    		return this.announcement.getPrefix();
+    	}
+    	
+    	public Timestamp getCreated_at(){
+    		return announcement.getCreated_at();
     	}
     }
     
@@ -144,36 +195,9 @@ public class ConflictHandler {
     	public String getPrefix(){
     		return this.prefix;
     	}
-    }
-
-    public class VerifiedAnnouncement {
-    	private int id;
-    	private Announcement announcement;
-    	private Timestamp created_at;
-    	private Timestamp updated_at;
     	
-    	public VerifiedAnnouncement(int id, Announcement announcement, Timestamp created_at, Timestamp updated_at){
-    		this.id = id;
-    		this.announcement = announcement;
-    		this.created_at = created_at;
-    		this.updated_at = updated_at;
-    	}
-    	
-    	@Override
-    	public String toString(){
-    		return this.id + "\t" + this.announcement.toString() + "\t" + this.created_at + "\t" + this.updated_at; 
-    	}
-    	
-    	public int getId(){
-    		return this.id;
-    	}
-    	
-    	public long getAsn(){
-    		return this.announcement.getAsn();
-    	}
-    	
-    	public String getPrefix(){
-    		return this.announcement.getPrefix();
+    	public Timestamp getCreated_at(){
+    		return created_at;
     	}
     }
     

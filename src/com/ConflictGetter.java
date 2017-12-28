@@ -37,32 +37,8 @@ public class ConflictGetter extends ConflictHandler{
         }
     }
     
- // Start the Conflict Getter
-    public void start(Boolean loadAnnouncements, Boolean loadRoas, Boolean loadConflicts){
-    	System.out.println("Loading conflicts, please stand by...\n");
-        long start = System.currentTimeMillis();
-        
-        if(loadAnnouncements){
-            announcements = new ArrayList<>();
-        	loadAnnouncements();
-        }
-        if(loadRoas){
-        	roas = new ArrayList<>();
-        	loadRoas();
-        }
-        if(loadConflicts){
-        	conflicts = new ArrayList<>();
-        	loadConflicts();
-        }
-    	
-    	System.out.println("Loaded ROAs: " + roas.size() + "\nLoaded conflicts: " + conflicts.size());
-        long end = System.currentTimeMillis();
-        long diff = end - start;
-        System.out.println("Loaded ROAs: " + roas.size() + ", Loaded conflicts: " + conflicts.size() + 
-        		". Loading took " + (diff / 1000)  + "." + (diff % 1000) + " s.\n");
-    }
-    
-    private void loadAnnouncements(){
+    protected void loadAnnouncements(){
+    	announcements = new ArrayList<>();
     	try{
     		Statement stmt = connection.createStatement();
     		ResultSet rs = stmt.executeQuery("SELECT * FROM announcements ORDER BY id");
@@ -102,10 +78,11 @@ public class ConflictGetter extends ConflictHandler{
     	}
     }
     
-    private void loadRoas(){
+    protected void loadRoas(){
+    	roas = new ArrayList<>();
     	try{
     		Statement stmt = connection.createStatement();
-    		ResultSet rs = stmt.executeQuery("SELECT * FROM validated_roas");
+    		ResultSet rs = stmt.executeQuery("SELECT * FROM validated_roas ORDER BY id");
     		Roa roa;
     		
     		while(rs.next()){
@@ -124,7 +101,8 @@ public class ConflictGetter extends ConflictHandler{
     	}
     }
     
-    private void loadConflicts(){
+    protected void loadConflicts(){
+    	conflicts = new ArrayList<>();
     	try{
     		Statement stmt = connection.createStatement();
     		ResultSet rs = stmt.executeQuery("SELECT * FROM validated_roas_verified_announcements");
@@ -166,6 +144,17 @@ public class ConflictGetter extends ConflictHandler{
     		}
     		if(!conflicts.contains(conflict)){
     			conflicts.add(conflict);
+    		}
+    	}catch(Exception e){
+    		System.out.println(e.getMessage());
+    	}
+    }
+    
+    protected void pushRoas(){
+    	try{
+    		Statement stmt = connection.createStatement();
+    		for(int i = 0; i < roas.size(); i++){
+    			
     		}
     	}catch(Exception e){
     		System.out.println(e.getMessage());
