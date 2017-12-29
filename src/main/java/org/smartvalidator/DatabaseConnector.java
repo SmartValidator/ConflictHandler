@@ -1,13 +1,23 @@
-package org.smartvalidator;
+package main.java.org.smartvalidator;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
-public class ConflictGetter extends ConflictHandler{
+public class DatabaseConnector extends ConflictClasses {
 	
     private Connection connection;
 	
-    public ConflictGetter(String db, String user, String password){
+    public DatabaseConnector(){
+    	String database = System.getProperty("database");
+    	String user = System.getProperty("user");
+    	String password = System.getProperty("password");
+    	
         System.out.println("-------- PostgreSQL "
                 + "JDBC Connection ------------");
         try {
@@ -21,9 +31,7 @@ public class ConflictGetter extends ConflictHandler{
         System.out.println("PostgreSQL JDBC Driver Registered!");
         connection = null;
         try {
-            connection = DriverManager.getConnection(
-                    db, user,
-                    password);
+            connection = DriverManager.getConnection(database, user, password);
         } catch (SQLException e) {
             System.out.println("Connection Failed! Check output console.\n");
             e.printStackTrace();
@@ -31,14 +39,13 @@ public class ConflictGetter extends ConflictHandler{
         }
         if (connection != null) {
             System.out.println("You made it, take control over your database now!");
-//            this.start();
         } else {
             System.out.println("\nFailed to make connection!");
         }
     }
     
-    protected void loadAnnouncements(){
-    	announcements = new ArrayList<>();
+    public void loadAnnouncements(){
+    	this.announcements = new ArrayList<>();
     	try{
     		Statement stmt = connection.createStatement();
     		ResultSet rs = stmt.executeQuery("SELECT * FROM announcements ORDER BY id");
@@ -78,7 +85,7 @@ public class ConflictGetter extends ConflictHandler{
     	}
     }
     
-    protected void loadRoas(){
+    public void loadRoas(){
     	roas = new ArrayList<>();
     	try{
     		Statement stmt = connection.createStatement();
@@ -101,7 +108,7 @@ public class ConflictGetter extends ConflictHandler{
     	}
     }
     
-    protected void loadConflicts(){
+    public void loadConflicts(){
     	conflicts = new ArrayList<>();
     	try{
     		Statement stmt = connection.createStatement();
@@ -150,7 +157,7 @@ public class ConflictGetter extends ConflictHandler{
     	}
     }
     
-    protected void pushRoas(){
+    public void pushRoas(){
     	try{
     		Statement stmt = connection.createStatement();
     		for(int i = 0; i < roas.size(); i++){

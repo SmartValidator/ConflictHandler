@@ -11,7 +11,7 @@
 .mtj.tmp/
 
 # Package Files #
-# *.jar
+*.jar
 *.war
 *.ear
 *.zip
@@ -25,7 +25,10 @@ hs_err_pid*
 .classpath
 .DS_Store
 .project
-src/com/Main.java
+Main.java
 
 # Maven build
 target/
+
+# Local library
+lib/
